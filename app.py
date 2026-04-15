@@ -1,0 +1,117 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import os
+
+# 1. Configuration de l'interface
+st.set_page_config(page_title="Dia-Collect 232", page_icon="🩺", layout="wide")
+
+# Fonction pour charger les données (Robustesse & Persistance)
+def charger_donnees():
+    if os.path.isfile('donnees_diabete.csv'):
+        return pd.read_csv('donnees_diabete.csv')
+    return None
+
+# --- ENTÊTE ---
+st.title("🩺 Dia-Collect 232 : Système d'Analyse Descriptive")
+st.markdown("---")
+
+# --- NAVIGATION ---
+tab1, tab2, tab3 = st.tabs(["📝 Collecte", "📊 Analyse Descriptive", "💡 Note Conceptuelle"])
+
+# --- ONGLET 1 : COLLECTE DES DONNÉES ---
+with tab1:
+    st.subheader("📝 Enregistrement des données cliniques")
+    
+    with st.form("form_patient", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            nom = st.text_input("Identifiant Patient (Anonymisé)", placeholder="Ex: P-2026-001")
+            age = st.number_input("Âge du patient", 0, 120, 25)
+            genre = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
+            
+        with col2:
+            poids = st.number_input("Poids (kg)", 1.0, 250.0, 70.0)
+            taille = st.number_input("Taille (m)", 0.5, 2.5, 1.70)
+            glycemie = st.number_input("Glycémie (g/L)", 0.1, 6.0, 1.0, step=0.1)
+            
+        imc = round(poids / (taille ** 2), 2)
+        tension = st.slider("Pression Artérielle (mmHg)", 40, 250, 120)
+        
+        submitted = st.form_submit_button("🚀 Valider et Enregistrer")
+        
+        if submitted:
+            if nom == "":
+                st.error("L'identifiant est obligatoire.")
+            else:
+                nouvelle_ligne = {
+                    "Nom": nom, "Age": age, "Genre": genre, 
+                    "IMC": imc, "Glycemie": glycemie, "Tension": tension
+                }
+                df_nouveau = pd.DataFrame([nouvelle_ligne])
+                
+                if not os.path.isfile('donnees_diabete.csv'):
+                    df_nouveau.to_csv('donnees_diabete.csv', index=False)
+                else:
+                    df_nouveau.to_csv('donnees_diabete.csv', mode='a', header=False, index=False)
+                
+                st.success(f"✅ Patient {nom} enregistré ! IMC : {imc}")
+
+# --- ONGLET 2 : ANALYSE DESCRIPTIVE AVEC EXPLICATIONS ---
+with tab2:
+    st.header("📊 Tableau de bord statistique")
+    data = charger_donnees()
+    
+    if data is not None:
+        st.subheader("🔍 Analyse par segmentation")
+        genres_filtre = st.multiselect("Comparer les groupes :", 
+                                      options=data['Genre'].unique(), 
+                                      default=data['Genre'].unique())
+        
+        data_filtree = data[data['Genre'].isin(genres_filtre)]
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Effectif (N)", len(data_filtree))
+        c2.metric("Glycémie Moyenne", f"{data_filtree['Glycemie'].mean():.2f} g/L")
+        c3.metric("Âge Moyen", f"{int(data_filtree['Age'].mean())} ans")
+        
+        st.markdown("---")
+        
+        g1, g2 = st.columns(2)
+        
+        with g1:
+            st.subheader("Structure par Genre (Univariée)")
+            fig_pie = px.pie(data_filtree, names='Genre', hole=0.4)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.caption("📌 **Explication technique :** Ce diagramme permet de vérifier la représentativité de l'échantillon : ce graphique me permet de vérifier si mon échantillon est représentatif. Par exemple, si j'ai 90% d'hommes, mes conclusions sur le diabète seront peut-être moins valables pour les femmes. C'est un indicateur de la qualité de ma collecte.")
+            
+        with g2:
+            st.subheader("Corrélation IMC vs Glycémie (Bivariée)")
+            fig_scatter = px.scatter(data_filtree, x="IMC", y="Glycemie", 
+                                     color="Genre", size="Age", hover_name="Nom")
+            st.plotly_chart(fig_scatter, use_container_width=True)
+            st.caption("📌 **Explication technique :** Ce nuage de points analyse si l'IMC influe sur la glycémie:ici chaque point est un patient. Plus le point est à droite, plus le patient est en surpoids. Plus il est haut, plus sa glycémie est élevée. Si les points forment une ligne qui monte, cela prouve visuellement que l'obésité est un facteur de risque direct pour le diabète dans notre groupe.")
+
+        st.subheader("📈 Comparaison des Moyennes de Glycémie")
+        avg_data = data_filtree.groupby('Genre')['Glycemie'].mean().reset_index()
+        fig_bar = px.bar(avg_data, x='Genre', y='Glycemie', color='Genre', text_auto='.2f')
+        st.plotly_chart(fig_bar, use_container_width=True)
+        
+        st.info("💡 **Analyse pour le diagnostic :** Ce graphique permet de comparer instantanément les moyennes entre les groupes .Il comparer instantanément deux groupes de population. On peut voir d'un coup d'œil si, en moyenne, les hommes ont une glycémie plus préoccupante que les femmes, ce qui permet de cibler les campagnes de prévention.")
+        
+        with st.expander("📂 Voir la base de données brute"):
+            st.write(data_filtree)
+    else:
+        st.warning("⚠️ Aucune donnée disponible.")
+
+# --- ONGLET 3 : NOTE CONCEPTUELLE ---
+with tab3:
+    st.header("💡 Note Technique & Conceptuelle")
+    st.markdown("""
+    ### 🎯 Objectifs de l'Analyse (UE INF 232)
+    * **Analyse de Répartition :** Étude de la distribution de fréquence.
+    * **Analyse Bivariée :** Recherche de corrélation (IMC/Glycémie).
+    * **Analyse Comparative :** Comparaison des indicateurs entre groupes.
+    
+    **Étudiant(e) :** [Ton Nom] | **Enseignant :** Pr. Rollin Francis
+    """)
