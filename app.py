@@ -3,21 +3,30 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# 1. Configuration de l'interface
+# --- 1. CONFIGURATION DE L'INTERFACE ---
 st.set_page_config(page_title="Dia-Collect 232", page_icon="🩺", layout="wide")
 
-# Fonction pour charger les données (Robustesse & Persistance)
+# Fonction pour charger les données
 def charger_donnees():
     if os.path.isfile('donnees_diabete.csv'):
         return pd.read_csv('donnees_diabete.csv')
     return None
 
+# --- STYLE CSS PERSONNALISÉ (Pour un design plus propre) ---
+st.markdown("""
+    <style>
+    .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #007BFF; color: white; }
+    .stExpander { border: 1px solid #007BFF; border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- ENTÊTE ---
 st.title("🩺 Dia-Collect 232 : Système d'Analyse Descriptive")
+st.write("**Secteur :** Santé Publique & Diabétologie | **Université de Yaoundé I**")
 st.markdown("---")
 
 # --- NAVIGATION ---
-tab1, tab2, tab3 = st.tabs(["📝 Collecte", "📊 Analyse Descriptive", "💡 Note Conceptuelle"])
+tab1, tab2, tab3 = st.tabs(["📝 Formulaire de Collecte", "📊 Tableau de Bord", "💡 Note de Synthèse"])
 
 # --- ONGLET 1 : COLLECTE DES DONNÉES ---
 with tab1:
@@ -107,11 +116,15 @@ with tab2:
 # --- ONGLET 3 : NOTE CONCEPTUELLE ---
 with tab3:
     st.header("💡 Note Technique & Conceptuelle")
-    st.markdown("""
-    ### 🎯 Objectifs de l'Analyse (UE INF 232)
-    * **Analyse de Répartition :** Étude de la distribution de fréquence.
-    * **Analyse Bivariée :** Recherche de corrélation (IMC/Glycémie).
-    * **Analyse Comparative :** Comparaison des indicateurs entre groupes.
+    st.markdown(f"""
     
-    **Étudiant(e) :** [Ton Nom] | **Enseignant :** Pr. Rollin Francis
+
+    ### 🛠️ Choix Techniques (Qualités de l'application) :
+    1.  **Créativité :** Intégration d'un calculateur d'IMC automatique et d'une analyse bivariée en temps réel.
+    2.  **Robustesse :** Persistance des données via CSV et gestion automatique des tris.
+    3.  **Efficacité :** Interface simplifiée permettant une saisie rapide et une visualisation immédiate.
+    4.  **Fiabilité :** Algorithmes de calcul basés sur les standards de l'OMS (Organisation Mondiale de la Santé).
+
+    **Étudiante :** TSIADZE DONFACK DARLENE| **Niveau :** L2 Informatique (Ngoa-Ekélé)
     """)
+    
